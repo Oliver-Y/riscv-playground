@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(qemu-system-riscv64:*)",
+      "Bash(brew list:*)",
+      "Bash(brew install:*)",
+      "Bash(mkisofs:*)",
+      "Bash(tmux:*)",
+      "Bash(echo:*)",
+      "Bash(git clone:*)",
+      "Bash(/Users/OliverY/.tmux/plugins/tpm/bin/install_plugins:*)",
+      "Bash(fc-list:*)",
+      "Bash(system_profiler:*)",
+      "Bash(brew search:*)",
+      "WebSearch",
+      "Bash(/Users/OliverY/.tmux/plugins/tpm/bin/clean_plugins:*)",
+      "Bash(open:*)",
+      "Bash(osascript:*)",
+      "Bash(chmod:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh auth status:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(/bin/bash:*)",
+      "Bash(/opt/homebrew/bin/bash:*)",
+      "Bash(source ~/.zshrc)",
+      "Bash(yazi:*)"
+    ]
+  }
+}

@@ -1,0 +1,106 @@
+RISC-V Boot Flow Deep Dive — Source Code & Resources
+=====================================================
+
+RISC-V PRIVILEGE LEVELS
+-----------------------
+M-mode (Machine)    — Firmware (OpenSBI). Full hardware access, no restrictions.
+S-mode (Supervisor) — OS kernel (Linux). Manages virtual memory, interrupts.
+U-mode (User)       — Your programs. Most restricted, trapped by the kernel.
+
+Boot chain: QEMU → OpenSBI (M-mode) → EDK2 UEFI (S-mode) → GRUB → Linux → Userspace
+
+
+STAGE 0: QEMU (the emulator itself)
+------------------------------------
+Source: https://github.com/qemu/qemu
+Local:  riscv64-linux/qemu/
+
+Key files:
+  hw/riscv/virt.c              — virt machine definition. Creates the virtual board,
+                                  maps devices into memory, loads OpenSBI, sets the
+                                  reset vector. Start here — it ties everything together.
+  target/riscv/cpu.c           — emulated RISC-V CPU model
+  target/riscv/insn_trans/     — instruction translation (how QEMU emulates each instruction)
+  target/riscv/csr.c           — CSR (Control and Status Register) emulation, the
+                                  privileged registers that control M/S/U modes
+
+
+STAGE 1: OpenSBI
+-----------------
+Source: https://github.com/riscv-software-src/opensbi
+
+Key files:
+  firmware/fw_dynamic.S        — entry point (the variant QEMU loads). Assembly that
+                                  sets up the initial environment.
+  lib/sbi/sbi_init.c           — sbi_init(), main C entry point after assembly bootstrap.
+                                  Trace the whole initialization from here.
+  lib/sbi/sbi_ecall.c          — SBI call dispatcher. When Linux does an ecall
+                                  instruction to request an SBI service, this is where
+                                  it lands.
+  lib/sbi/sbi_ecall_replace.c  — implementations of actual SBI calls (timer, IPI, etc.)
+  lib/sbi/sbi_ecall_legacy.c   — legacy SBI call implementations
+  platform/generic/            — platform code for QEMU's virt machine
+
+Spec: riscv-sbi-doc/ (already cloned locally)
+      https://github.com/riscv-non-isa/riscv-sbi-doc
+
+
+STAGE 2: EDK2 UEFI
+-------------------
+Source: https://github.com/tianocore/edk2
+
+Key files:
+  OvmfPkg/RiscVVirt/            — RISC-V QEMU virt platform package. Compiled into
+                                   the edk2-riscv-code.fd file.
+  OvmfPkg/RiscVVirt/Sec/SecMain.c — SEC phase entry point, first code EDK2 runs
+                                     after OpenSBI hands off.
+  MdePkg/Library/BaseRiscVSbiLib/  — EDK2's SBI client library, shows how UEFI
+                                     firmware calls back down to OpenSBI.
+
+Note: EDK2 is massive. Focus on RiscVVirt/ and trace from SecMain.c forward.
+
+
+STAGE 3: GRUB
+--------------
+Source: https://git.savannah.gnu.org/git/grub.git
+
+Key files:
+  grub-core/kern/riscv/        — RISC-V architecture-specific code
+  grub-core/kern/efi/init.c    — EFI entry point (GRUB is loaded as a UEFI app)
+  grub-core/loader/linux.c     — the linux and initrd commands that load the kernel
+
+
+STAGE 4: Linux Kernel
+----------------------
+Source: https://github.com/torvalds/linux
+Local:  riscv64-linux/linux/
+
+Key files:
+  arch/riscv/kernel/head.S       — the very first instruction the kernel executes
+  arch/riscv/kernel/setup.c      — setup_arch(), main architecture initialization
+  arch/riscv/kernel/sbi.c        — kernel's SBI call wrappers (how Linux talks to OpenSBI)
+  arch/riscv/kernel/entry.S      — trap/interrupt/syscall entry points
+  arch/riscv/mm/init.c           — page table setup, Sv39/Sv48 virtual memory
+  arch/riscv/include/asm/sbi.h   — SBI call numbers and interfaces
+  arch/riscv/kernel/cpufeature.c — ISA extension detection
+
+
+RECOMMENDED READING ORDER
+--------------------------
+1. hw/riscv/virt.c in QEMU — see how the whole machine is wired together
+2. firmware/fw_dynamic.S → sbi_init.c in OpenSBI — first code that runs
+3. arch/riscv/kernel/head.S → setup.c → sbi.c in Linux — kernel boot and SBI usage
+4. EDK2 and GRUB later — least RISC-V-specific parts
+
+
+REFERENCE SPECS
+----------------
+RISC-V ISA (unprivileged + privileged):
+  https://github.com/riscv/riscv-isa-manual
+  - Volume 1 chapters 1-2 for the base integer ISA
+  - Privileged spec for M/S/U modes, CSRs, page tables, traps
+  - Unusually readable as hardware specs go
+
+SBI Specification:
+  https://github.com/riscv-non-isa/riscv-sbi-doc
+  Local: riscv-sbi-doc/

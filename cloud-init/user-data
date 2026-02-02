@@ -1,0 +1,5 @@
+#cloud-config
+password: riscv
+chpasswd:
+  expire: false
+ssh_pwauth: true

@@ -1,0 +1,10 @@
+# VM images and runtime files
+*.qcow2
+*.fd
+*.iso
+.DS_Store
+
+# Build artifacts
+*.o
+*.elf
+*.bin
